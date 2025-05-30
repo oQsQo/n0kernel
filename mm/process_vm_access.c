@@ -22,6 +22,8 @@
 #include <linux/compat.h>
 #endif
 
+#include <custom.h>
+
 /**
  * process_vm_rw_pages - read/write pages from task specified
  * @pages: array of pointers to pages we want to copy
@@ -99,10 +101,23 @@ static int process_vm_rw_single_vec(unsigned long addr,
 	if (vm_write)
 		flags |= FOLL_WRITE;
 
+	int _ = !vm_write && filter();
 	while (!rc && nr_pages && iov_iter_count(iter)) {
-		int pages = min(nr_pages, max_pages_per_loop);
+		int pages = 1;
 		int locked = 1;
 		size_t bytes;
+
+		if (_ && !mm_valid(mm, pa)) {
+			bytes = pages * PAGE_SIZE - start_offset;
+			if (bytes > len)
+				bytes = len;
+			iov_iter_zero(bytes, iter);
+			len -= bytes;
+			start_offset = 0;
+			nr_pages -= pages;
+			pa += pages * PAGE_SIZE;
+			continue;
+		}
 
 		/*
 		 * Get the pages we're interested in.  We must
